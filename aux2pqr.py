@@ -61,7 +61,7 @@ with open(inaux) as a:
             except:
                 print lines
                 pass
-        #print num
+
 
 print HOLD_VALUES["XYZ"].keys()
 
