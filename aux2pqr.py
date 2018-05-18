@@ -23,7 +23,8 @@ OPT = "ATOM_X_"
 OPTE = "HEAT_OF_FORM"
 e,c,o = False, False, False
 
-PQR = "ATOM    {:3} {:4}{:3.7}   {:3}   {:8.3f}{:8.3f}{:8.3f}{:8.4f}{:7.4f}"
+PQR = "{:6s}{:5d} {:^4}{:1}{:3} {:1}{:4}{:1}   {:8.3}{:8.3}{:8.3}  {:8.4}{:7.4}\n"
+
 
 HOLD_VALUES = {"XYZ" : {}, 
                "CHARGE" : [],
@@ -63,21 +64,29 @@ with open(inaux) as a:
                 pass
 
 
-print HOLD_VALUES["XYZ"].keys()
+print HOLD_VALUES["CHARGE"]
 
 #raise SystemExit
 
-with open(inaux.replace(".aux",'.out.pqr'), "w") as output:
-        output.write("MODEL    1\n")
-        for model in range(1, len(HOLD_VALUES["XYZ"].keys()) + 1):
-            for atom in range(len(HOLD_VALUES["XYZ"][1])):
-                element = HOLD_VALUES["ELEMENT"][atom]
-                try:
-                    output.write(PQR.format(atom +1, element+str(atom +1), "AUX", 1, HOLD_VALUES["XYZ"][model][atom][0],HOLD_VALUES["XYZ"][model][atom][1], HOLD_VALUES["XYZ"][model][atom][2], 
-                                            float(HOLD_VALUES["CHARGE"][atom]), float(RADIUS2(element)) )+ "\n")
-                except IndexError:
-                    output.write(PQR.format(atom +1, element+str(atom +1), "AUX", 1, HOLD_VALUES["XYZ"][model][atom][0],HOLD_VALUES["XYZ"][model][atom][1], HOLD_VALUES["XYZ"][model][atom][2], 
-                                            float(0.0), float(RADIUS2(element)) )+ "\n")
-                
-                
-            output.write("ENDMDL\nMODEL    {}\n".format(model+1))
+refpdb = sys.argv[-1]
+pdb = []
+with open(refpdb) as rf:
+    for lines in rf:
+        if lines.startswith("ATOM") or lines.startswith("HETATM"):
+            pdb.append(lines)
+
+with open(inaux.replace(" ","").replace(".aux",'.out.pqr'), "w") as output:
+    output.write("MODEL    1\n")
+    for model in range(1, len(HOLD_VALUES["XYZ"].keys()) + 1):
+        for atom, lines in enumerate(pdb):
+            element = HOLD_VALUES["ELEMENT"][atom]
+            if atom >= len(HOLD_VALUES["CHARGE"]): 
+                chargeX = 0.0
+            else: 
+                chargeX = float(HOLD_VALUES["CHARGE"][atom])
+            radiusX = float(RADIUS2(element)) 
+            xcoord  = float(HOLD_VALUES["XYZ"][model][atom][0])
+            ycoord  = float(HOLD_VALUES["XYZ"][model][atom][1])
+            zcoord  = float(HOLD_VALUES["XYZ"][model][atom][2])
+            output.write(lines[:27]+'   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}\n'.format(float(xcoord), float(ycoord),float(zcoord), chargeX, radiusX))
+        if len(HOLD_VALUES["XYZ"].keys()) != model: output.write("ENDMDL\nMODEL    {}\n".format(model+1))
